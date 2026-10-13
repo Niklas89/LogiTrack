@@ -1,29 +1,49 @@
 @LogiTrack_HostAddress = http://localhost:5150
 @itemId = 0
 @orderId = 0
+@token = paste-access-token-here
 
 GET {{LogiTrack_HostAddress}}/api/inventory
+Authorization: Bearer {{token}}
 
 ### Create inventory (copy returned itemId to delete below)
 POST {{LogiTrack_HostAddress}}/api/inventory
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {"name":"Pallet Jack","quantity":12,"location":"Warehouse A"}
 
 ### Replace ID with the created itemId
 DELETE {{LogiTrack_HostAddress}}/api/inventory/{{itemId}}
+Authorization: Bearer {{token}}
 
 ###
 GET {{LogiTrack_HostAddress}}/api/orders
+Authorization: Bearer {{token}}
 
 ### Create an order with two NEW inventory items
 POST {{LogiTrack_HostAddress}}/api/orders
+Authorization: Bearer {{token}}
 Content-Type: application/json
 
 {"customerName":"Samir","items":[{"name":"Box","quantity":2,"location":"Warehouse A"},{"name":"Pallet","quantity":1,"location":"Warehouse B"}]}
 
 ### Replace ID with the created orderId
 GET {{LogiTrack_HostAddress}}/api/orders/{{orderId}}
+Authorization: Bearer {{token}}
 
 ### Deleting the order preserves its inventory items
 DELETE {{LogiTrack_HostAddress}}/api/orders/{{orderId}}
+Authorization: Bearer {{token}}
+
+### Register a regular user (choose your own password)
+POST {{LogiTrack_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{"email":"samir@example.com","password":"ChooseYourOwn!90210"}
+
+### Log in; copy accessToken into @token above
+POST {{LogiTrack_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{"email":"samir@example.com","password":"ChooseYourOwn!90210"}

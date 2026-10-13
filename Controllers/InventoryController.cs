@@ -2,10 +2,12 @@ using LogiTrack.Data;
 using LogiTrack.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 
 namespace LogiTrack.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/inventory")]
 public class InventoryController(LogiTrackContext context) : ControllerBase
 {
@@ -14,6 +16,7 @@ public class InventoryController(LogiTrackContext context) : ControllerBase
         await context.InventoryItems.AsNoTracking().OrderBy(item => item.ItemId).ToListAsync(cancellationToken);
 
     [HttpPost]
+    [Authorize(Roles = "Manager")]
     public async Task<ActionResult<InventoryItem>> Create(InventoryItem item, CancellationToken cancellationToken)
     {
         if (item.ItemId != 0 || item.OrderId is not null)
@@ -25,6 +28,7 @@ public class InventoryController(LogiTrackContext context) : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
+    [Authorize(Roles = "Manager")]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
     {
         var item = await context.InventoryItems.FindAsync([id], cancellationToken);

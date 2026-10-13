@@ -2,10 +2,12 @@ using LogiTrack.Data;
 using LogiTrack.Models;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 
 namespace LogiTrack.Controllers;
 
 [ApiController]
+[Authorize]
 [Route("api/orders")]
 public class OrderController(LogiTrackContext context) : ControllerBase
 {
@@ -25,6 +27,7 @@ public class OrderController(LogiTrackContext context) : ControllerBase
     }
 
     [HttpPost]
+    [Authorize(Roles = "Manager")]
     public async Task<ActionResult<Order>> Create(Order order, CancellationToken cancellationToken)
     {
         // This route creates new items atomically with the order; existing IDs are rejected.
@@ -39,6 +42,7 @@ public class OrderController(LogiTrackContext context) : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
+    [Authorize(Roles = "Manager")]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
     {
         var order = await context.Orders.FindAsync([id], cancellationToken);

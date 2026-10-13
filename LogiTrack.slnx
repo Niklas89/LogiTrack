@@ -1,0 +1,6 @@
+<Solution>
+  <Folder Name="/Tests/">
+    <Project Path="Tests/LogiTrack.Tests.csproj" />
+  </Folder>
+  <Project Path="LogiTrack.csproj" />
+</Solution>
