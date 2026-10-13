@@ -1,7 +1,7 @@
-# LogiTrack — Activity 1
+# LogiTrack — Activities 1 and 2
 
 ASP.NET Core project targeting .NET 10 with EF Core 10 and SQL Server Developer.
-API endpoints for inventory and orders are reserved for Part 2.
+Part 2 adds async inventory and order controllers, validation, and development Swagger documentation.
 
 ## Run
 
@@ -61,3 +61,61 @@ This exercise's one-to-many model permits an inventory row to belong to only one
 For shared products across orders and per-order quantities, introduce an `OrderItem`
 entity in a later activity. Public setters are kept for the beginner model and EF;
 call the membership methods to preserve their checks.
+
+## Activity 2 API
+
+Start with `dotnet run --launch-profile http`, then open
+http://localhost:5150/swagger. Swagger UI loads its assets from a public CDN,
+so the browser needs internet access. The OpenAPI document is available at
+`/openapi/v1.json` in Development and can also be imported into Postman.
+
+| Method | Route | Result |
+| --- | --- | --- |
+| GET | /api/inventory | 200 with all inventory |
+| POST | /api/inventory | 201 with the created item |
+| DELETE | /api/inventory/{id} | 204, or 404 if missing |
+| GET | /api/orders | 200 with orders and their items |
+| GET | /api/orders/{id} | 200 with item details, or 404 |
+| POST | /api/orders | 201 with the order and a Location header |
+| DELETE | /api/orders/{id} | 204, or 404 if missing |
+
+Order POST accepts multiple **new** inventory items:
+
+```json
+{
+  "customerName": "Samir",
+  "items": [
+    { "name": "Box", "quantity": 2, "location": "Warehouse A" },
+    { "name": "Pallet", "quantity": 1, "location": "Warehouse B" }
+  ]
+}
+```
+
+Omit generated IDs and item `orderId` values. Existing inventory IDs are rejected;
+this route creates the order and its nested inventory together in one SaveChanges
+transaction. An empty items array is allowed. Deleting an order preserves inventory
+and clears its order IDs. Deleting inventory also removes it from order membership.
+These routes do not decrement stock or implement per-order line quantities.
+
+Review improvements applied: explicit routes, integer route constraints, async EF
+calls with cancellation, no-tracking reads, eager-loaded order items, automatic
+DataAnnotations validation (400), Problem Details for missing IDs and invalid
+creation IDs, and a JSON-ignored back-reference to prevent serialization cycles.
+Authentication and pagination remain future activities.
+
+### Verification
+
+`dotnet build --no-restore` passed with zero warnings and zero errors.
+Manual testing through Swagger was reported successful by the project owner.
+
+To repeat the manual checks:
+
+1. Apply the existing migration with `dotnet ef database update` and start the app.
+2. In Swagger, use **Try it out** for each of the seven routes above. Create
+   inventory and a two-item order; copy their returned IDs into GET/DELETE calls.
+3. Confirm GET requests return the saved data and that it survives an app restart.
+4. Delete the test order, confirm its inventory remains with null order IDs, then
+   delete each test inventory item. Repeat a delete to check the 404 response.
+5. Submit a negative quantity or missing customer name and confirm a 400 response.
+
+`LogiTrack.http` also contains manual request examples.

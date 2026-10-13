@@ -13,6 +13,7 @@ public class InventoryItem
     [Required, MaxLength(200)]
     public string Location { get; set; } = string.Empty;
     public int? OrderId { get; set; }
+    [System.Text.Json.Serialization.JsonIgnore]
     public Order? Order { get; set; }
 
     public void DisplayInfo() =>
