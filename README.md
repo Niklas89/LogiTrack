@@ -79,7 +79,24 @@ so the browser needs internet access. The OpenAPI document is available at
 | POST | /api/orders | 201 with the order and a Location header |
 | DELETE | /api/orders/{id} | 204, or 404 if missing |
 
-Order POST accepts multiple **new** inventory items:
+### JSON examples for POST requests
+
+With Activity 3 enabled, log in as a **Manager** and authorize Swagger before
+running either request. Select **Try it out**, paste the JSON into the request
+body, and click **Execute**. Use `Content-Type: application/json` in Postman.
+Both requests should return **201 Created**.
+
+**POST `/api/inventory`** — create one inventory item:
+
+```json
+{
+  "name": "Pallet Jack",
+  "quantity": 12,
+  "location": "Warehouse A"
+}
+```
+
+**POST `/api/orders`** — create an order with multiple **new** inventory items:
 
 ```json
 {
@@ -96,6 +113,14 @@ this route creates the order and its nested inventory together in one SaveChange
 transaction. An empty items array is allowed. Deleting an order preserves inventory
 and clears its order IDs. Deleting inventory also removes it from order membership.
 These routes do not decrement stock or implement per-order line quantities.
+
+IDs and the order date are generated automatically when omitted. Save the returned
+IDs to test GET and DELETE requests. The order example creates its own items;
+it does not attach the item created by the separate inventory request.
+
+The activity instructions require GET, POST, and DELETE routes only. PUT/PATCH
+update endpoints are not implemented or required by Activities 2 and 3, despite
+the introduction's use of the term CRUD. Activity 3 secures the existing routes.
 
 Review improvements applied: explicit routes, integer route constraints, async EF
 calls with cancellation, no-tracking reads, eager-loaded order items, automatic
@@ -226,7 +251,7 @@ or tenant-based isolation is not implemented.
 Five automated security tests passed, including SQL Server integration coverage
 for registration, duplicate/weak-password rejection, login, denied anonymous access
 to all seven routes, role-overposting rejection, ordinary-user 403 responses,
-Manager CRUD, tampered tokens, lockout, and rate limiting. Token validation tests
+Manager create/read/delete access, tampered tokens, lockout, and rate limiting. Token validation tests
 also reject expired tokens and incorrect issuer, audience, or signing keys.
 
 To repeat them with local SQL Server running:
