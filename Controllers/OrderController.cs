@@ -9,7 +9,7 @@ namespace LogiTrack.Controllers;
 [ApiController]
 [Authorize]
 [Route("api/orders")]
-public class OrderController(LogiTrackContext context) : ControllerBase
+public class OrderController(LogiTrackContext context, InventoryCache cache) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<List<Order>>> GetAll(CancellationToken cancellationToken) =>
@@ -38,6 +38,7 @@ public class OrderController(LogiTrackContext context) : ControllerBase
 
         context.Orders.Add(order);
         await context.SaveChangesAsync(cancellationToken);
+        cache.Invalidate();
         return CreatedAtAction(nameof(GetById), new { id = order.OrderId }, order);
     }
 
@@ -45,12 +46,13 @@ public class OrderController(LogiTrackContext context) : ControllerBase
     [Authorize(Roles = "Manager")]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
     {
-        var order = await context.Orders.FindAsync([id], cancellationToken);
-        if (order is null)
+        // SQL Server clears inventory foreign keys through ON DELETE SET NULL.
+        var deleted = await context.Orders.Where(order => order.OrderId == id)
+            .ExecuteDeleteAsync(cancellationToken);
+        if (deleted == 0)
             return Problem(statusCode: 404, detail: $"Order {id} was not found.");
 
-        context.Orders.Remove(order);
-        await context.SaveChangesAsync(cancellationToken);
+        cache.Invalidate();
         return NoContent();
     }
 }

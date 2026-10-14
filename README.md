@@ -1,4 +1,4 @@
-# LogiTrack — Activities 1, 2, and 3
+# LogiTrack — Activities 1–4
 
 ASP.NET Core project targeting .NET 10 with EF Core 10 and SQL Server Developer.
 Part 2 adds async inventory and order controllers, validation, and development Swagger documentation.
@@ -264,3 +264,53 @@ The integration test applies migrations to a unique `LogiTrackSecurityTests_*`
 database and deletes only that test database afterward. The test account needs
 permission to create/drop databases. It does not modify the main LogiTrack data.
 Use Swagger to repeat the user/Manager access checks manually.
+
+## Activity 4: Caching and query performance
+
+`Program.cs` registers `AddMemoryCache()` and a singleton `InventoryCache`.
+The inventory controller delegates list reads to this shared service, which injects
+`IMemoryCache`. Inventory lists have a **30-second absolute expiration**; hits do
+not extend it. Queries remain ordered, asynchronous, cancellable, and untracked.
+A semaphore prevents simultaneous cache misses from issuing duplicate queries.
+Failed queries are not cached. A version check prevents a query overlapping a
+write from putting stale data back into the cache.
+
+Successful inventory creation/deletion and order creation/deletion invalidate the
+list immediately. Order writes matter because they create items or clear their
+order IDs. Requests already in flight may still return their earlier snapshot.
+External database changes become visible after expiration. This cache is local to
+one application process; multiple instances would need coordinated invalidation
+or distributed caching. Cached objects are read-only by convention in controllers.
+
+Order GET routes already used `AsNoTracking()` and `Include(order => order.Items)`;
+these are retained to avoid tracking overhead and N+1 queries. Order DELETE now
+uses `ExecuteDeleteAsync()` to issue one SQL command instead of fetching, tracking,
+and then deleting the order. Affected-row count preserves the 404 response, and
+the existing database foreign key sets inventory order IDs to null.
+
+Codex review addressed the activity prompts about adding in-memory caching,
+optimizing Entity Framework queries, and avoiding repeated database calls. The
+applied refinements include shared cache fills, invalidation on all related writes,
+and deletion without a preliminary SELECT. Pagination is still a future improvement
+for large lists; caching does not reduce response size or serialization cost.
+
+Run verification with SQL Server available:
+
+```powershell
+dotnet test Tests/LogiTrack.Tests.csproj --logger "console;verbosity=normal"
+```
+
+`PerformanceTests` creates and removes only a unique `LogiTrackPerformanceTests_*`
+database. It checks cache hits with zero SQL commands, invalidation after all four
+write routes, eager loading with one query and no tracked entities, one-command
+order deletion, and refresh after waiting 31 seconds. It also prints Stopwatch
+measurements for one uncached controller read and the average of 100 cached reads
+after warming up EF/SQL. These are local controller timings, excluding HTTP and
+serialization overhead, not a production load benchmark. Existing HTTP security
+tests continue to exercise authentication and authorization with caching enabled.
+
+Verification on October 14, 2026: all six tests passed. The measured uncached
+controller read took 2.567 ms; the mean cached read took approximately 0.001 ms
+(100 reads), with SQL commands reduced from one per uncached read to zero per hit.
+Timing varies by machine and workload; the SQL-command assertions verify the
+reduction independently of timing noise.

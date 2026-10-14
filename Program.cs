@@ -10,6 +10,8 @@ using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllers();
+builder.Services.AddMemoryCache();
+builder.Services.AddSingleton<InventoryCache>();
 builder.Services.AddOpenApi(options => options.AddDocumentTransformer<BearerSecurityDocumentTransformer>());
 builder.Services.AddDbContext<LogiTrackContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("LogiTrack")));

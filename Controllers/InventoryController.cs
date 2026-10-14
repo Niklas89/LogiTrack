@@ -9,11 +9,11 @@ namespace LogiTrack.Controllers;
 [ApiController]
 [Authorize]
 [Route("api/inventory")]
-public class InventoryController(LogiTrackContext context) : ControllerBase
+public class InventoryController(LogiTrackContext context, InventoryCache cache) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<List<InventoryItem>>> GetAll(CancellationToken cancellationToken) =>
-        await context.InventoryItems.AsNoTracking().OrderBy(item => item.ItemId).ToListAsync(cancellationToken);
+        await cache.GetAsync(context, cancellationToken);
 
     [HttpPost]
     [Authorize(Roles = "Manager")]
@@ -24,6 +24,7 @@ public class InventoryController(LogiTrackContext context) : ControllerBase
 
         context.InventoryItems.Add(item);
         await context.SaveChangesAsync(cancellationToken);
+        cache.Invalidate();
         return CreatedAtAction(nameof(GetAll), item);
     }
 
@@ -37,6 +38,7 @@ public class InventoryController(LogiTrackContext context) : ControllerBase
 
         context.InventoryItems.Remove(item);
         await context.SaveChangesAsync(cancellationToken);
+        cache.Invalidate();
         return NoContent();
     }
 }
