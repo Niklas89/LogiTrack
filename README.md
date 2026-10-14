@@ -1,4 +1,4 @@
-# LogiTrack — Activities 1–4
+# LogiTrack — Completed capstone
 
 ASP.NET Core project targeting .NET 10 with EF Core 10 and SQL Server Developer.
 Part 2 adds async inventory and order controllers, validation, and development Swagger documentation.
@@ -314,3 +314,11 @@ controller read took 2.567 ms; the mean cached read took approximately 0.001 ms
 (100 reads), with SQL commands reduced from one per uncached read to zero per hit.
 Timing varies by machine and workload; the SQL-command assertions verify the
 reduction independently of timing noise.
+
+## Final activity: persistence and submission
+
+See [FINAL_SUBMISSION.md](FINAL_SUBMISSION.md) for the architecture summary, final
+review changes, seven-test verification results, restart guarantees and Swagger
+peer-review walkthrough. SQL Server is the persistence strategy; memory caching
+is disposable and reloads from SQL after application restart. Protected inventory
+and order responses now use no-store headers without disabling the server cache.

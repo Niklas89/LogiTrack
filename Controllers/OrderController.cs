@@ -8,6 +8,7 @@ namespace LogiTrack.Controllers;
 
 [ApiController]
 [Authorize]
+[ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
 [Route("api/orders")]
 public class OrderController(LogiTrackContext context, InventoryCache cache) : ControllerBase
 {
